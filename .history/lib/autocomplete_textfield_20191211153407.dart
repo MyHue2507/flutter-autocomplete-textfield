@@ -25,7 +25,6 @@ class AutoCompleteTextField<T> extends StatefulWidget {
   final bool submitOnSuggestionTap, clearOnSubmit;
   final List<TextInputFormatter> inputFormatters;
   final int minLength;
-  final double heightOfItem;
 
   final InputDecoration decoration;
   final TextStyle style;
@@ -64,7 +63,6 @@ class AutoCompleteTextField<T> extends StatefulWidget {
       this.textCapitalization: TextCapitalization.sentences,
       this.minLength = 1,
       this.controller,
-      this.heightOfItem,//height of an item
       this.focusNode})
       : super(key: key);
 
@@ -114,7 +112,6 @@ class AutoCompleteTextField<T> extends StatefulWidget {
       keyboardType,
       textInputAction,
       controller,
-      heightOfItem,
       focusNode);
 }
 
@@ -133,7 +130,6 @@ class AutoCompleteTextFieldState<T> extends State<AutoCompleteTextField> {
   Filter<T> itemFilter;
   int suggestionsAmount;
   int minLength;
-  double heightOfItem;
   bool submitOnSuggestionTap, clearOnSubmit;
   TextEditingController controller;
   FocusNode focusNode;
@@ -167,7 +163,6 @@ class AutoCompleteTextFieldState<T> extends State<AutoCompleteTextField> {
       this.keyboardType,
       this.textInputAction,
       this.controller,
-      this.heightOfItem,
       this.focusNode) {
     textField = new TextField(
       inputFormatters: inputFormatters,
@@ -199,20 +194,14 @@ class AutoCompleteTextFieldState<T> extends State<AutoCompleteTextField> {
 
     textField.focusNode.addListener(() {
       if (onFocusChanged != null) {
-        print("onFocusChange");
         onFocusChanged(textField.focusNode.hasFocus);
-      }
-      else{
-        updateOverlay(currentText);
       }
 
       if (!textField.focusNode.hasFocus) {
         filteredSuggestions = [];
         updateOverlay();
-      } else {
-      if (!(currentText == null)) {
+      } else if (!(currentText == "" || currentText == null)) {
         updateOverlay(currentText);
-      }
       }
     });
   }
@@ -322,49 +311,39 @@ class AutoCompleteTextFieldState<T> extends State<AutoCompleteTextField> {
                 offset: Offset(0.0, height),
                 child: new SizedBox(
                     width: width,
-                    height: filteredSuggestions.length == 0
-                        ? 0
-                        : filteredSuggestions.length == 1
-                            ? heightOfItem
-                            : filteredSuggestions.length == 2
-                                ? heightOfItem*2
-                                : filteredSuggestions.length == 3
-                                    ? heightOfItem*3
-                                    : filteredSuggestions.length == 4
-                                        ? heightOfItem*4
-                                        : heightOfItem*5,
                     child: new Card(
-                        child: new ListView(
+                        child: new Column(
                       children: filteredSuggestions.map((suggestion) {
-                        return new InkWell(
-                            child: itemBuilder(context, suggestion),
-                            onTap: () {
-                              setState(() {
-                                if (submitOnSuggestionTap) {
-                                  String newText = suggestion.toString();
-                                  textField.controller.text = newText;
-                                  textField.focusNode.unfocus();
-                                  itemSubmitted(suggestion);
-                                  if (clearOnSubmit) {
-                                    clear();
-                                  }
-                                } else {
-                                  String newText = suggestion.toString();
-                                  textField.controller.text = newText;
-                                  textChanged(newText);
-                                }
-                              });
-                            });
+                        return new Row(children: [
+                          new Expanded(
+                              child: new InkWell(
+                                  child: itemBuilder(context, suggestion),
+                                  onTap: () {
+                                    setState(() {
+                                      if (submitOnSuggestionTap) {
+                                        String newText = suggestion.toString();
+                                        textField.controller.text = newText;
+                                        textField.focusNode.unfocus();
+                                        itemSubmitted(suggestion);
+                                        if (clearOnSubmit) {
+                                          clear();
+                                        }
+                                      } else {
+                                        String newText = suggestion.toString();
+                                        textField.controller.text = newText;
+                                        textChanged(newText);
+                                      }
+                                    });
+                                  }))
+                        ]);
                       }).toList(),
                     )))));
       });
       Overlay.of(context).insert(listSuggestionsEntry);
     }
-    if(query == "")
-      filteredSuggestions = suggestions;
-    else
-      filteredSuggestions = getSuggestions(
-          suggestions, itemSorter, itemFilter, suggestionsAmount, query);
+
+    filteredSuggestions = getSuggestions(
+        suggestions, itemSorter, itemFilter, suggestionsAmount, query);
 
     listSuggestionsEntry.markNeedsBuild();
   }
@@ -393,6 +372,7 @@ class AutoCompleteTextFieldState<T> extends State<AutoCompleteTextField> {
     if (controller == null) {
       textField.controller.dispose();
     }
+    listSuggestionsEntry?.remove();
     super.dispose();
   }
 
@@ -468,8 +448,5 @@ class SimpleAutoCompleteTextField extends AutoCompleteTextField<String> {
           keyboardType,
           textInputAction,
           controller,
-          heightOfItem,
           focusNode);
 }
-
-
